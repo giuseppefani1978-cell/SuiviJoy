@@ -235,9 +235,45 @@ const first7Days = [
   },
   {
     date:"2026-06-16",
-    douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.9, bonheur:6
+    douleur:6, appetit:6, hydratation:6, mobilite:5,
+    hygiene:"", environnement:"", interactions:"", plaisir:4,
+    anxiete:5, bonheur:5
+  },
+  {
+    date:"2026-06-17",
+    douleur:6, appetit:6, hydratation:"",
+    mobilite:5.5, hygiene:"", environnement:"", interactions:"",
+    plaisir:4, anxiete:4, bonheur:5
+  },
+  {
+    date:"2026-06-18",
+    douleur:5.5, appetit:6, hydratation:"",
+    mobilite:4.5, hygiene:"", environnement:"", interactions:"",
+    plaisir:5, anxiete:7, bonheur:6.5
+  },
+  {
+    date:"2026-06-19",
+    douleur:6, appetit:6.5, hydratation:"",
+    mobilite:5, hygiene:"", environnement:"", interactions:"",
+    plaisir:5, anxiete:5, bonheur:5.5
+  },
+  {
+    date:"2026-06-20",
+    douleur:6, appetit:6.5, hydratation:"",
+    mobilite:5, hygiene:"", environnement:"", interactions:"",
+    plaisir:5, anxiete:5, bonheur:5.5
+  },
+  {
+    date:"2026-06-21",
+    douleur:6, appetit:6, hydratation:"",
+    mobilite:6, hygiene:"", environnement:"", interactions:"",
+    plaisir:4.5, anxiete:5, bonheur:5
+  },
+  {
+    date:"2026-06-22",
+    douleur:6, appetit:6, hydratation:"",
+    mobilite:6.5, hygiene:"", environnement:"", interactions:"",
+    plaisir:5, anxiete:5, bonheur:6
   }
 ];
 
@@ -258,8 +294,21 @@ function setData(data){
   localStorage.setItem("joyData", JSON.stringify(data));
 }
 
+function getValue(d,id){
+  const v = parseFloat(d[id]);
+  return isNaN(v) ? null : v;
+}
+
+function displayValue(d,id){
+  const v = getValue(d,id);
+  return v === null ? "" : v;
+}
+
 function totalScore(d){
-  return criteres.reduce((sum,[id]) => sum + Number(d[id] || 0), 0).toFixed(1);
+  return criteres.reduce((sum,[id]) => {
+    const v = getValue(d,id);
+    return sum + (v === null ? 0 : v);
+  }, 0).toFixed(1);
 }
 
 function saveDay(){
@@ -321,11 +370,11 @@ function renderChart(data){
     data:{
       labels:data.map(d => d.date),
       datasets:[
-        {label:"Bonheur", data:data.map(d => d.bonheur), tension:.3},
-        {label:"Douleur", data:data.map(d => d.douleur), tension:.3},
-        {label:"Anxiété", data:data.map(d => d.anxiete), tension:.3},
-        {label:"Mobilité", data:data.map(d => d.mobilite), tension:.3},
-        {label:"Plaisir", data:data.map(d => d.plaisir), tension:.3}
+        {label:"Bonheur", data:data.map(d => getValue(d,"bonheur")), tension:.3},
+        {label:"Douleur", data:data.map(d => getValue(d,"douleur")), tension:.3},
+        {label:"Anxiété", data:data.map(d => getValue(d,"anxiete")), tension:.3},
+        {label:"Mobilité", data:data.map(d => getValue(d,"mobilite")), tension:.3},
+        {label:"Plaisir", data:data.map(d => getValue(d,"plaisir")), tension:.3}
       ]
     },
     options:{
@@ -357,17 +406,21 @@ function renderSummary(data){
   </tr>`;
 
   criteres.forEach(([id,label,inverse]) => {
-    const cumul = data.reduce((s,d) => s + d[id], 0);
-    const moy = cumul / data.length;
+    const valeurs = data.map(d => getValue(d,id)).filter(v => v !== null);
+    const cumul = valeurs.reduce((s,v) => s + v, 0);
+    const moy = valeurs.length ? cumul / valeurs.length : null;
 
-    let lecture = inverse
-      ? moy >= 7 ? "Vigilance élevée" : moy >= 5 ? "À surveiller" : "Correct"
-      : moy < 5 ? "Vigilance élevée" : moy < 7 ? "À surveiller" : "Correct";
+    let lecture = "";
+    if(moy !== null){
+      lecture = inverse
+        ? moy >= 7 ? "Vigilance élevée" : moy >= 5 ? "À surveiller" : "Correct"
+        : moy < 5 ? "Vigilance élevée" : moy < 7 ? "À surveiller" : "Correct";
+    }
 
     html += `<tr>
       <td>${label}</td>
-      <td>${cumul.toFixed(1)}</td>
-      <td>${moy.toFixed(1)}/10</td>
+      <td>${valeurs.length ? cumul.toFixed(1) : ""}</td>
+      <td>${moy !== null ? moy.toFixed(1) + "/10" : ""}</td>
       <td>${lecture}</td>
     </tr>`;
   });
@@ -401,16 +454,16 @@ function renderHistory(data){
   data.forEach(d => {
     html += `<tr onclick="editDay('${d.date}')">
       <td>${d.date}</td>
-      <td>${d.douleur}</td>
-      <td>${d.appetit}</td>
-      <td>${d.hydratation}</td>
-      <td>${d.mobilite}</td>
-      <td>${d.hygiene}</td>
-      <td>${d.environnement}</td>
-      <td>${d.interactions}</td>
-      <td>${d.plaisir}</td>
-      <td>${d.anxiete}</td>
-      <td>${d.bonheur}</td>
+      <td>${displayValue(d,"douleur")}</td>
+      <td>${displayValue(d,"appetit")}</td>
+      <td>${displayValue(d,"hydratation")}</td>
+      <td>${displayValue(d,"mobilite")}</td>
+      <td>${displayValue(d,"hygiene")}</td>
+      <td>${displayValue(d,"environnement")}</td>
+      <td>${displayValue(d,"interactions")}</td>
+      <td>${displayValue(d,"plaisir")}</td>
+      <td>${displayValue(d,"anxiete")}</td>
+      <td>${displayValue(d,"bonheur")}</td>
       <td>${totalScore(d)}</td>
     </tr>`;
   });
