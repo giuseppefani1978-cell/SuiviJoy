@@ -258,6 +258,10 @@ function setData(data){
   localStorage.setItem("joyData", JSON.stringify(data));
 }
 
+function totalScore(d){
+  return criteres.reduce((sum,[id]) => sum + Number(d[id] || 0), 0).toFixed(1);
+}
+
 function saveDay(){
   const date = document.getElementById("date").value;
   if(!date) return alert("Choisis une date.");
@@ -385,9 +389,13 @@ function renderHistory(data){
     <th>Appétit</th>
     <th>Hydrat.</th>
     <th>Mobilité</th>
+    <th>Hygiène</th>
+    <th>Environ.</th>
+    <th>Interact.</th>
     <th>Plaisir</th>
     <th>Anxiété</th>
     <th>Bonheur</th>
+    <th>Total /100</th>
   </tr>`;
 
   data.forEach(d => {
@@ -397,9 +405,13 @@ function renderHistory(data){
       <td>${d.appetit}</td>
       <td>${d.hydratation}</td>
       <td>${d.mobilite}</td>
+      <td>${d.hygiene}</td>
+      <td>${d.environnement}</td>
+      <td>${d.interactions}</td>
       <td>${d.plaisir}</td>
       <td>${d.anxiete}</td>
       <td>${d.bonheur}</td>
+      <td>${totalScore(d)}</td>
     </tr>`;
   });
 
