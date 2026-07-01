@@ -1,151 +1,125 @@
 (function () {
-  function getJoyData() {
-    const possibleKeys = ["joyData", "suiviJoyData", "donneesJoy", "data"];
-    for (const key of possibleKeys) {
+  const WEIGHTS = {
+    douleur: -0.18,
+    anxiete: -0.14,
+    mobilite: 0.18,
+    appetit: 0.14,
+    plaisir: 0.14,
+    bonheur: 0.12,
+    interactions: 0.08,
+    environnement: 0.06,
+    hydratation: 0.04,
+    hygiene: 0.02
+  };
+
+  function getData() {
+    for (const k of Object.keys(localStorage)) {
       try {
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
+        const v = JSON.parse(localStorage.getItem(k));
+        if (Array.isArray(v) && v[0]?.date && "mobilite" in v[0]) return v;
+      } catch {}
     }
-
-    if (Array.isArray(window.joyData)) return window.joyData;
-    if (Array.isArray(window.data)) return window.data;
-
-    return [];
+    return Array.isArray(window.data) ? window.data : [];
   }
 
-  function avg(arr, key) {
-    const vals = arr.map(x => Number(x[key])).filter(x => !isNaN(x));
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  function score(j) {
+    let s = 0;
+    s += (10 - Number(j.douleur || 0)) * Math.abs(WEIGHTS.douleur);
+    s += (10 - Number(j.anxiete || 0)) * Math.abs(WEIGHTS.anxiete);
+    s += Number(j.mobilite || 0) * WEIGHTS.mobilite;
+    s += Number(j.appetit || 0) * WEIGHTS.appetit;
+    s += Number(j.plaisir || 0) * WEIGHTS.plaisir;
+    s += Number(j.bonheur || 0) * WEIGHTS.bonheur;
+    s += Number(j.interactions || 0) * WEIGHTS.interactions;
+    s += Number(j.environnement || 0) * WEIGHTS.environnement;
+    s += Number(j.hydratation || 0) * WEIGHTS.hydratation;
+    s += Number(j.hygiene || 0) * WEIGHTS.hygiene;
+    return s;
   }
 
-  function scoreCorrige(jour) {
-    const positif = [
-      jour.appetit,
-      jour.hydratation,
-      jour.mobilite,
-      jour.hygiene,
-      jour.environnement,
-      jour.interactions,
-      jour.plaisir,
-      jour.bonheur
-    ];
-
-    const douleurInversee = 10 - Number(jour.douleur || 0);
-    const anxieteInversee = 10 - Number(jour.anxiete || 0);
-
-    const valeurs = [...positif, douleurInversee, anxieteInversee]
-      .map(Number)
-      .filter(x => !isNaN(x));
-
-    return valeurs.length
-      ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length
-      : null;
+  function avg(a) {
+    return a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
   }
 
-  function tendance(data) {
-    if (data.length < 4) return "Pas encore assez de données pour une vraie tendance.";
-
-    const derniers = data.slice(-7);
-    const precedents = data.slice(-14, -7);
-
-    const scoreDerniers = avg(derniers.map(j => ({ score: scoreCorrige(j) })), "score");
-    const scorePrecedents = precedents.length
-      ? avg(precedents.map(j => ({ score: scoreCorrige(j) })), "score")
-      : null;
-
-    if (scorePrecedents === null) {
-      return `Score corrigé moyen récent : ${scoreDerniers.toFixed(2)}/10.`;
-    }
-
-    const diff = scoreDerniers - scorePrecedents;
-
-    if (diff > 0.25) return `Tendance plutôt positive : +${diff.toFixed(2)} point sur la période récente.`;
-    if (diff < -0.25) return `Tendance plutôt négative : ${diff.toFixed(2)} point sur la période récente.`;
-    return `Tendance globalement stable : variation de ${diff.toFixed(2)} point.`;
+  function slope(values) {
+    const n = values.length;
+    if (n < 3) return 0;
+    const mx = (n - 1) / 2;
+    const my = avg(values);
+    let num = 0, den = 0;
+    values.forEach((y, x) => {
+      num += (x - mx) * (y - my);
+      den += (x - mx) ** 2;
+    });
+    return den ? num / den : 0;
   }
 
-  function alertes(data) {
+  function forecast(scores, days) {
+    const recent = scores.slice(-14);
+    const s = slope(recent);
+    const last = scores[scores.length - 1];
+    return Math.max(0, Math.min(10, last + s * days));
+  }
+
+  function status(v) {
+    if (v >= 6.2) return "Stable / plutôt favorable";
+    if (v >= 5.0) return "Fragile mais acceptable";
+    if (v >= 4.2) return "Zone de vigilance";
+    return "Zone préoccupante";
+  }
+
+  function render() {
+    const data = getData().sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (!data.length) return;
+
+    const scores = data.map(score);
     const last = data[data.length - 1];
-    if (!last) return [];
+    const lastScore = score(last);
+    const m7 = avg(scores.slice(-7));
+    const f7 = forecast(scores, 7);
+    const f30 = forecast(scores, 30);
+    const f45 = forecast(scores, 45);
 
     const alerts = [];
+    if (last.mobilite < 4.5) alerts.push("mobilité basse");
+    if (last.plaisir <= 4.5) alerts.push("plaisir limité");
+    if (last.appetit < 5) alerts.push("appétit faible");
+    if (last.anxiete >= 8) alerts.push("anxiété/confusion élevée");
+    if (last.douleur >= 8) alerts.push("douleur élevée");
 
-    if (Number(last.mobilite) < 4.5) alerts.push("Mobilité basse aujourd’hui.");
-    if (Number(last.appetit) < 5) alerts.push("Appétit faible aujourd’hui.");
-    if (Number(last.plaisir) <= 4) alerts.push("Plaisir très limité aujourd’hui.");
-    if (Number(last.anxiete) >= 8) alerts.push("Anxiété/confusion élevée aujourd’hui.");
-    if (Number(last.douleur) >= 8) alerts.push("Douleur/inconfort élevé aujourd’hui.");
+    const box = document.createElement("div");
+    box.className = "card";
+    box.innerHTML = `
+      <h2>Assistant Joy</h2>
+      <p><strong>État actuel :</strong> ${status(lastScore)}</p>
+      <p><strong>Score pondéré du jour :</strong> ${lastScore.toFixed(2)}/10</p>
+      <p><strong>Moyenne 7 jours :</strong> ${m7.toFixed(2)}/10</p>
 
-    return alerts;
-  }
+      <h3>Prévision prudente</h3>
+      <p><strong>Dans 7 jours :</strong> ${f7.toFixed(2)}/10</p>
+      <p><strong>Fin juillet / début août :</strong> ${f30.toFixed(2)} à ${f45.toFixed(2)}/10</p>
+      <p><em>Confiance limitée : seulement ${data.length} jours de données.</em></p>
 
-  function analyseJoy() {
-    const data = getJoyData();
-    if (!data.length) return "Aucune donnée Joy trouvée.";
+      <h3>Lecture automatique</h3>
+      <p>${alerts.length ? "Points de vigilance : " + alerts.join(", ") + "." : "Pas de signal rouge aujourd’hui."}</p>
+      <p>${f30 < lastScore - 0.4 ? "Tendance légèrement défavorable." : "Tendance globalement stable à court terme."}</p>
 
-    const last = data[data.length - 1];
-    const score = scoreCorrige(last);
-    const moy7 = data.slice(-7).map(scoreCorrige).filter(x => x !== null);
-    const moyenne7 = moy7.reduce((a, b) => a + b, 0) / moy7.length;
-
-    const a = alertes(data);
-
-    let html = `
-      <div class="card">
-        <h2>Analyse automatique Joy</h2>
-        <p><strong>Dernière date :</strong> ${last.date || "non renseignée"}</p>
-        <p><strong>Score corrigé du jour :</strong> ${score ? score.toFixed(2) : "n/a"}/10</p>
-        <p><strong>Moyenne corrigée 7 jours :</strong> ${moyenne7 ? moyenne7.toFixed(2) : "n/a"}/10</p>
-        <p><strong>Tendance :</strong> ${tendance(data)}</p>
+      <button id="copyJoyPrompt">Copier analyse pour ChatGPT</button>
     `;
 
-    if (a.length) {
-      html += `<p><strong>Points de vigilance :</strong></p><ul>`;
-      a.forEach(x => html += `<li>${x}</li>`);
-      html += `</ul>`;
-    } else {
-      html += `<p><strong>Points de vigilance :</strong> aucun signal rouge aujourd’hui.</p>`;
-    }
+    const target = [...document.querySelectorAll("h2")]
+      .find(h => h.textContent.toLowerCase().includes("graphique"));
 
-    html += `
-        <button id="copyJoyJsonBtn">Copier le JSON pour ChatGPT</button>
-      </div>
-    `;
+    if (target) target.parentNode.insertBefore(box, target);
+    else document.body.appendChild(box);
 
-    return html;
+    document.getElementById("copyJoyPrompt").onclick = async () => {
+      const txt = "Analyse ces données Joy et actualise la prévision fin juillet / début août :\n\n" +
+        JSON.stringify(data, null, 2);
+      await navigator.clipboard.writeText(txt);
+      document.getElementById("copyJoyPrompt").textContent = "Copié ✅";
+    };
   }
 
-  function injectJoyAI() {
-    const container = document.createElement("div");
-    container.id = "joy-ai-agent";
-    container.innerHTML = analyseJoy();
-
-    const historique = Array.from(document.querySelectorAll("h2"))
-      .find(h => h.textContent.toLowerCase().includes("historique"));
-
-    if (historique) {
-      historique.parentNode.insertBefore(container, historique);
-    } else {
-      document.body.appendChild(container);
-    }
-
-    const btn = document.getElementById("copyJoyJsonBtn");
-    if (btn) {
-      btn.addEventListener("click", async () => {
-        const data = getJoyData();
-        const json = JSON.stringify(data, null, 2);
-        try {
-          await navigator.clipboard.writeText(json);
-          btn.textContent = "JSON copié ✅";
-        } catch (e) {
-          alert(json);
-        }
-      });
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", injectJoyAI);
+  document.addEventListener("DOMContentLoaded", render);
 })();
