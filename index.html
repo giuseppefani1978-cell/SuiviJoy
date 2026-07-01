@@ -162,6 +162,7 @@ tr:active{
 
 <button onclick="saveDay()">Enregistrer / mettre à jour</button>
 <button onclick="loadFirst7Days()">Préremplir les 7 premiers jours</button>
+<button onclick="exportJSON()">Exporter JSON</button>
 <button class="red" onclick="resetAll()">Tout effacer</button>
 
 <p class="small">Les données restent enregistrées sur cet iPhone via le navigateur.</p>
@@ -197,84 +198,28 @@ const criteres = [
 ];
 
 const first7Days = [
-  {
-    date:"2026-06-10",
-    douleur:7.5, appetit:7.5, hydratation:5.5, mobilite:6,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.8, bonheur:6
-  },
-  {
-    date:"2026-06-11",
-    douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.8,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.8, bonheur:6
-  },
-  {
-    date:"2026-06-12",
-    douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.9, bonheur:6
-  },
-  {
-    date:"2026-06-13",
-    douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.9, bonheur:6
-  },
-  {
-    date:"2026-06-14",
-    douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.9, bonheur:6
-  },
-  {
-    date:"2026-06-15",
-    douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9,
-    hygiene:6, environnement:6, interactions:7, plaisir:4,
-    anxiete:7.9, bonheur:6
-  },
-  {
-    date:"2026-06-16",
-    douleur:6, appetit:6, hydratation:6, mobilite:5,
-    hygiene:"", environnement:"", interactions:"", plaisir:4,
-    anxiete:5, bonheur:5
-  },
-  {
-    date:"2026-06-17",
-    douleur:6, appetit:6, hydratation:"",
-    mobilite:5.5, hygiene:"", environnement:"", interactions:"",
-    plaisir:4, anxiete:4, bonheur:5
-  },
-  {
-    date:"2026-06-18",
-    douleur:5.5, appetit:6, hydratation:"",
-    mobilite:4.5, hygiene:"", environnement:"", interactions:"",
-    plaisir:5, anxiete:7, bonheur:6.5
-  },
-  {
-    date:"2026-06-19",
-    douleur:6, appetit:6.5, hydratation:"",
-    mobilite:5, hygiene:"", environnement:"", interactions:"",
-    plaisir:5, anxiete:5, bonheur:5.5
-  },
-  {
-    date:"2026-06-20",
-    douleur:6, appetit:6.5, hydratation:"",
-    mobilite:5, hygiene:"", environnement:"", interactions:"",
-    plaisir:5, anxiete:5, bonheur:5.5
-  },
-  {
-    date:"2026-06-21",
-    douleur:6, appetit:6, hydratation:"",
-    mobilite:6, hygiene:"", environnement:"", interactions:"",
-    plaisir:4.5, anxiete:5, bonheur:5
-  },
-  {
-    date:"2026-06-22",
-    douleur:6, appetit:6, hydratation:"",
-    mobilite:6.5, hygiene:"", environnement:"", interactions:"",
-    plaisir:5, anxiete:5, bonheur:6
-  }
+  {date:"2026-06-10", douleur:7.5, appetit:7.5, hydratation:5.5, mobilite:6, hygiene:6, environnement:6, interactions:7, plaisir:4, anxiete:7.8, bonheur:6},
+  {date:"2026-06-11", douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.8, hygiene:6, environnement:6, interactions:7, plaisir:4, anxiete:7.8, bonheur:6},
+  {date:"2026-06-12", douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9, hygiene:6, environnement:6, interactions:7, plaisir:4, anxiete:7.9, bonheur:6},
+  {date:"2026-06-13", douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9, hygiene:6, environnement:6, interactions:7, plaisir:4, anxiete:7.9, bonheur:6},
+  {date:"2026-06-14", douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9, hygiene:6, environnement:6, interactions:7, plaisir:4, anxiete:7.9, bonheur:6},
+  {date:"2026-06-15", douleur:7.5, appetit:7.2, hydratation:5.5, mobilite:5.9, hygiene:6, environnement:6, interactions:7, plaisir:4, anxiete:7.9, bonheur:6},
+  {date:"2026-06-16", douleur:6, appetit:6, hydratation:6, mobilite:5, hygiene:5, environnement:5.5, interactions:5, plaisir:4, anxiete:5, bonheur:5},
+  {date:"2026-06-17", douleur:6, appetit:6, hydratation:6, mobilite:5.5, hygiene:5.5, environnement:5.5, interactions:6, plaisir:4, anxiete:4, bonheur:5},
+  {date:"2026-06-18", douleur:5.5, appetit:6, hydratation:6, mobilite:4.5, hygiene:5.5, environnement:6, interactions:6, plaisir:5, anxiete:7, bonheur:6.5},
+  {date:"2026-06-19", douleur:6, appetit:6.5, hydratation:6, mobilite:5, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5, bonheur:5.5},
+  {date:"2026-06-20", douleur:6, appetit:6.5, hydratation:6, mobilite:5, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5, bonheur:5.5},
+  {date:"2026-06-21", douleur:6, appetit:6, hydratation:6, mobilite:6, hygiene:6, environnement:6, interactions:6, plaisir:4.5, anxiete:5, bonheur:5},
+  {date:"2026-06-22", douleur:6, appetit:6, hydratation:6, mobilite:6.5, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5, bonheur:6},
+  {date:"2026-06-23", douleur:6, appetit:6, hydratation:6, mobilite:5.5, hygiene:5.5, environnement:6, interactions:6, plaisir:4.5, anxiete:5, bonheur:5},
+  {date:"2026-06-24", douleur:5.5, appetit:6, hydratation:6, mobilite:6, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5.5, bonheur:6},
+  {date:"2026-06-25", douleur:5.5, appetit:6, hydratation:6, mobilite:6, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5.5, bonheur:6},
+  {date:"2026-06-26", douleur:5.5, appetit:6, hydratation:6, mobilite:6, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5.5, bonheur:6},
+  {date:"2026-06-27", douleur:5.5, appetit:6, hydratation:6, mobilite:6, hygiene:6, environnement:6, interactions:6, plaisir:5, anxiete:5, bonheur:6},
+  {date:"2026-06-28", douleur:4, appetit:6, hydratation:5.5, mobilite:4, hygiene:5, environnement:5, interactions:5, plaisir:5, anxiete:8, bonheur:6},
+  {date:"2026-06-29", douleur:7, appetit:6, hydratation:6, mobilite:5.5, hygiene:6, environnement:6, interactions:5.6, plaisir:6, anxiete:7, bonheur:6},
+  {date:"2026-06-30", douleur:7.5, appetit:6, hydratation:6, mobilite:5, hygiene:6, environnement:6, interactions:5.6, plaisir:6, anxiete:7.3, bonheur:6},
+  {date:"2026-07-01", douleur:6, appetit:7, hydratation:6, mobilite:5.5, hygiene:5, environnement:5, interactions:5.5, plaisir:4.5, anxiete:5, bonheur:5}
 ];
 
 let chart;
@@ -345,7 +290,7 @@ function loadFirst7Days(){
   setData(data);
   render();
 
-  alert("Les 7 premiers jours ont été ajoutés. Tu peux les modifier dans l’historique en ressaisissant la même date.");
+  alert("Les données historiques ont été ajoutées. Tu peux les modifier dans l’historique en ressaisissant la même date.");
 }
 
 function resetAll(){
@@ -353,6 +298,19 @@ function resetAll(){
     localStorage.removeItem("joyData");
     render();
   }
+}
+
+function exportJSON(){
+  const data = getData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "joy-data.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function render(){
